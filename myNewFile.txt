@@ -3,3 +3,7 @@ This is my new file.
 Add in a branch dev then merge to master.
 
 Modify in master.
+
+Add in a branch newfunc
+
+done
