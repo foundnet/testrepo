@@ -3,3 +3,5 @@ This is my new file.
 Add in a branch dev.
 
 Add in a branch newfunc
+
+Add in a branch newfunc-->mynewfunc
