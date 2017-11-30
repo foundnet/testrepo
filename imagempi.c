@@ -11,7 +11,7 @@
 double boundaryval(int i, int m);
 
 // The No.0 node scatter edge data to every node. The other nodes receive edge data.
-double ** scatter_vector(double **sendbuf, int*block_size, int N_modi,int cur_rank, int comm_size, MPI_Type *pDATATYPE, MPI_Comm *pcomm) {
+double ** scatter_vector(double **sendbuf, int*block_size, int N_modi,int cur_rank, int comm_size, MPI_Datatype *pDATATYPE, MPI_Comm *pcomm) {
   double **edge = (double **) arralloc(sizeof(double), 2, block_size[0], N_modi);
   if (cur_rank == 0)  {
     MPI_Request *request = (MPI_Request *)malloc( comm_size*sizeof(MPI_Request) );
@@ -40,7 +40,7 @@ double ** scatter_vector(double **sendbuf, int*block_size, int N_modi,int cur_ra
   return edge;
 }
 
-int gather_vector(double **recvbuf,double **localimg,int*block_size,int cur_rank,int comm_size,MPI_Type *pDATATYPE,MPI_Comm *pcomm) {
+int gather_vector(double **recvbuf,double **localimg,int*block_size,int cur_rank,int comm_size,MPI_Dataype *pDATATYPE,MPI_Comm *pcomm) {
   if (cur_rank == 0)  {
     MPI_Request *request = (MPI_Request *)malloc( comm_size*sizeof(MPI_Request) );
     MPI_Status status;
@@ -73,8 +73,8 @@ int main (int argc, char **argv)
 {
   double **edge, **masterbuf, **sendbuf, **buf;
   double temp[1][1] = {1};
-  sendbuf = &temp[0][0];
-  masterbuf = &temp[0][0];
+  sendbuf = &temp;
+  masterbuf = &temp;
 
   int i, j, iter, maxiter, N, M, M_modi, N_modi;
   int block_size[2] = {0,0};
@@ -160,16 +160,17 @@ int main (int argc, char **argv)
   MPI_Type_vector(block_size[0], block_size[1], N_modi, MPI_DOUBLE, &DT_BLOCK);
   MPI_Type_commit(&DT_BLOCK);
   
-  edge = scatter_vector(sendbuf, &block_size, cart_rank, size, &DT_BLOCK, &cart_comm);
+  edge = (double**)scatter_vector(sendbuf, &block_size, cart_rank, size, &DT_BLOCK, &cart_comm);
 
   double **pnew, **pold;
-  double **image_vector  = (double **) arralloc(sizeof(double), 3, 2, block_size[0]+2, block_size[1]+2);
+  double **odd  = (double **) arralloc(sizeof(double), 2, block_size[0]+2, block_size[1]+2);
+  double **even  = (double **) arralloc(sizeof(double), 2, block_size[0]+2, block_size[1]+2);
   
   // Initialize the image vector.
   for ( i=0; i < block_size[0]+2 ; i++ ) {
     for ( j=0 ; j < block_size[1]+2 ; j++)  {
-	    image_vector[0][i][j] = 255.0;
-      image_vector[1][i][j] = 255.0;
+	    odd[i][j] = 255.0;
+      even[i][j] = 255.0;
     }
   }
 
@@ -181,8 +182,8 @@ int main (int argc, char **argv)
       /* compute sawtooth value */
       val = boundaryval(i+cur_coods[0]*block_size[0], M);
 
-      image_vector[0][i][0] = (int)(255.0*val);
-      image_vector[1][i][0] = (int)(255.0*val);
+      odd[i][0] = (int)(255.0*val);
+      even[i][0] = (int)(255.0*val);
     }
   }
   else if (top_nbr == MPI_PROC_NULL )  {
@@ -190,8 +191,8 @@ int main (int argc, char **argv)
       /* compute sawtooth value */
       val = boundaryval(i+cur_coods[0]*block_size[0], M);
 
-      image_vector[0][i][block_size[1]+1] = (int)(255.0*(1.0-val));
-      image_vector[1][i][block_size[1]+1] = (int)(255.0*(1.0-val));
+      odd[i][block_size[1]+1] = (int)(255.0*(1.0-val));
+      even[i][block_size[1]+1] = (int)(255.0*(1.0-val));
     }
   }
   iter = 0 ;
