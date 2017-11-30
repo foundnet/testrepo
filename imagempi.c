@@ -82,7 +82,10 @@ int main (int argc, char **argv)
   sendbuf = temp;
   masterbuf = temp;
 
-  int i, j, iter, maxiter, N, M, M_modi, N_modi;
+  int i, j, iter, maxiter;
+  //, N, M, M_modi, N_modi;
+  int img_size[2] = {0,0};
+  int img_modisize[2] = {0,0};
   int block_size[2] = {0,0};
 
   char *filename;
@@ -131,23 +134,23 @@ int main (int argc, char **argv)
       printf("Usage: ./imagecalc <edge file name>\n");
       return 0;
     }
-    pgmsize(filename,&M, &N);
-    block_size[0] = M%dims[0] == 0? M/dims[0]:M/dims[0]+1;
-    block_size[1] = N%dims[1] == 0? N/dims[1]:N/dims[1]+1;
+    pgmsize(filename,&img_size[0], &img_size[1]);
+    block_size[0] = img_size[0]%dims[0] == 0? img_size[0]/dims[0]:img_size[0]/dims[0]+1;
+    block_size[1] = img_size[1]%dims[1] == 0? img_size[1]/dims[1]:img_size[1]/dims[1]+1;
     //Enlarge the data vector's size to make it can be divided exactly by the dims
     //So, we can use derived datatype to distribute and gather data
-    M_modi = block_size[0] * dims[0];
-    N_modi = block_size[1] * dims[1];
+    img_modisize[0] = block_size[0] * dims[0];
+    img_modisize[1] = block_size[1] * dims[1];
 
-    masterbuf = (double **)arralloc(sizeof(double), 2, M , N );
-    pgmread(filename, &masterbuf[0][0], M, N);
+    masterbuf = (double **)arralloc(sizeof(double), 2, img_size[0] , img_size[1] );
+    pgmread(filename, &masterbuf[0][0], img_size[0], img_size[1]);
     
-    if (M_modi == M && N_modi == N)  sendbuf = masterbuf;
+    if (img_size[0] == img_modisize[0] && img_size[1] == img_modisize[1])  sendbuf = masterbuf;
     else {
-      sendbuf = (double **)arralloc(sizeof(double), 2, M_modi , N_modi );
-      for (int i=0; i<M_modi; i++)
-        for (int j=0; j<N_modi; j++) {
-            if ( i<M && j<N )  sendbuf[i][j] = masterbuf[i][j] ;
+      sendbuf = (double **)arralloc(sizeof(double), 2, img_modisize[0] , img_modisize[1] );
+      for (int i=0; i < img_modisize[0] ; i++)
+        for (int j=0; j < img_modisize[1] ; j++) {
+            if ( i<img_size[0] && j<img_size[1] )  sendbuf[i][j] = masterbuf[i][j] ;
             else sendbuf[i][j] = DBL_MAX;
         }
     }
@@ -161,15 +164,14 @@ int main (int argc, char **argv)
 */
   }
 
-  printf("CART_RANK:%d  Before Bcast:B-SIZE[0] %d B-SIZE[1] %d M_MODI %d N_MODI %d\n",cart_rank,block_size[0],block_size[1],M_modi,N_modi);
-  
   MPI_Bcast(&block_size, 2, MPI_INT, 0, cart_comm) ;
-  MPI_Bcast(&N_modi, 1, MPI_INT, 0, cart_comm) ;
-  printf("CART_RANK:%d  After Bcast:B-SIZE[0] %d B-SIZE[1] %d M_MODI %d N_MODI %d\n",cart_rank,block_size[0],block_size[1],M_modi,N_modi);
+  MPI_Bcast(&img_size, 2, MPI_INT, 0, cart_comm) ;
+  MPI_Bcast(&img_modisize, 2, MPI_INT, 0, cart_comm) ;
+  printf("CART_RANK:%d  After Bcast BLOCK:%d %d MN:%d %d MODI:%d %d\n",cart_rank,block_size[0],block_size[1],img_size[0],img_size[1],img_modisize[0],img_modisize[1]);
  
   // Create new derived datatype to transfer data
   MPI_Datatype DT_BLOCK;
-  MPI_Type_vector(block_size[0], block_size[1], N_modi, MPI_DOUBLE, &DT_BLOCK);
+  MPI_Type_vector(block_size[0], block_size[1], img_modisize[1], MPI_DOUBLE, &DT_BLOCK);
   MPI_Type_commit(&DT_BLOCK);
   
   edge = (double**)scatter_vector(sendbuf, block_size, N_modi, cart_rank, size, DT_BLOCK, &cart_comm);
@@ -209,7 +211,7 @@ int main (int argc, char **argv)
   if (bottom_nbr == MPI_PROC_NULL )  {
     for ( i=1 ; i < range[0]+1 ; i++)  {
       /* compute sawtooth value */
-      val = boundaryval(i+cur_coods[0]*block_size[0], M);
+      val = boundaryval(i+cur_coods[0]*block_size[0], img_size[0]);
 
       odd[i][0] = (int)(255.0*val);
       even[i][0] = (int)(255.0*val);
@@ -219,7 +221,7 @@ int main (int argc, char **argv)
   else if (top_nbr == MPI_PROC_NULL )  {
     for ( i=1 ; i < range[0]+1 ; i++)  {
       /* compute sawtooth value */
-      val = boundaryval(i+cur_coods[0]*block_size[0], M);
+      val = boundaryval(i+cur_coods[0]*block_size[0], img_size[0]);
 
       odd[i][range[1]+1] = (int)(255.0*(1.0-val));
       even[i][range[1]+1] = (int)(255.0*(1.0-val));
