@@ -23,6 +23,7 @@ int main(int argc, char* argv[]){
   MPI_Status status;
 
   double sendmatrix[N][N], recvmatrix[N][N];
+  double buff[N][1];
   MPI_Datatype mcoltype;
 
 
@@ -66,30 +67,16 @@ int main(int argc, char* argv[]){
   for(iter=1;iter<itmax;iter++){
    if(rank == 0){
 
-    for(i=0;i<N;i++){
-     for(j=ColStart;j<(ColStart+M);j++){
-     }
-    }
-
     MPI_Ssend(&(sendmatrix[0][ColStart-1]),1,mcoltype,1,50,comm);
-    MPI_Recv(&(recvmatrix[0][ColStart-1]),1,mcoltype,1,60,comm,&status);
+    MPI_Recv(&(buff[0][0]),1,mcoltype,1,60,comm,&status);
    }
    else{
-
-    for(i=0;i<N;i++){
-     for(j=ColStart;j<(ColStart+M);j++){
-     }
-    }
-
-    MPI_Recv(&(recvmatrix[0][ColStart-1]),1,mcoltype,0,50,comm,&status);
+    MPI_Recv(&(buff[0][0]),1,mcoltype,0,50,comm,&status);
     MPI_Ssend(&(sendmatrix[0][ColStart-1]),1,mcoltype,0,60,comm);
-
    }
 
    for(i=0;i<N;i++){
-    for(j=ColStart;j<(ColStart+M);j++){
-     sendmatrix[i][j-1] = recvmatrix[i][j-1];
-    }
+    sendmatrix[i][ColStart-1] = buff[i][0];
    }
   }
 
