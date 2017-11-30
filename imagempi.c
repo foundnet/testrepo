@@ -7,7 +7,6 @@
 #include "arralloc.h"
 #include "pgmio.h"
 
-typedef enum _Direction {I-ROW,J-COLUMN} Direction;
 
 double boundaryval(int i, int m);
 
@@ -72,9 +71,10 @@ int gather_vector(double **recvbuf,double **localimg,int*block_size,int cur_rank
 
 int main (int argc, char **argv)
 {
-  double **old, **new, **edge, **masterbuf, **sendbuf, **buf;
+  double **edge, **masterbuf, **sendbuf, **buf;
   double temp[1][1] = {1};
-  sendbuf = masterbuf = &temp[0][0];
+  sendbuf = &temp[0][0];
+  masterbuf = &temp[0][0];
 
   int i, j, iter, maxiter, N, M, M_modi, N_modi;
   int block_size[2] = {0,0};
@@ -98,7 +98,7 @@ int main (int argc, char **argv)
   int dims[2] = {0,0};                  //This is a 2D decomposing.
   int period[2] = {1,0};                //The rows are peridic,the col is fixed.
   MPI_Dims_create(size, 2, dims);
-  MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periods, 0, &cart_comm);
+  MPI_Cart_create(MPI_COMM_WORLD, 2, dims, period, 0, &cart_comm);
 
   //Get the neighbers and self-node rank in virtual topology
   int left_nbr,right_nbr,top_nbr,bottom_nbr;
@@ -163,10 +163,10 @@ int main (int argc, char **argv)
   edge = scatter_vector(sendbuf, &block_size, cart_rank, size, &DT_BLOCK, &cart_comm);
 
   double **pnew, **pold;
-  image_vector  = (double **) arralloc(sizeof(double), 3, 2, block_size[0]+2, block_size[1]+2);
+  double **image_vector  = (double **) arralloc(sizeof(double), 3, 2, block_size[0]+2, block_size[1]+2);
   
   // Initialize the image vector.
-  for ( i=0; i < block_size[0]+2 ; i++ ） {
+  for ( i=0; i < block_size[0]+2 ; i++ ) {
     for ( j=0 ; j < block_size[1]+2 ; j++)  {
 	    image_vector[0][i][j] = 255.0;
       image_vector[1][i][j] = 255.0;

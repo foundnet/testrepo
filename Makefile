@@ -24,12 +24,12 @@ INC=\
 OBJ=	$(SRC:.c=.o)
 
 .c.o:
-	$(CC) $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) -std=c99 -c $<
 
 all:	$(EXE)
 
 $(EXE):	$(OBJ)
-	$(CC) $(CFLAGS) -o $@ $(OBJ) $(LFLAGS)
+	$(CC) $(CFLAGS) -std=c99 -o $@ $(OBJ) $(LFLAGS)
 
 $(OBJ):	$(INC)
 
