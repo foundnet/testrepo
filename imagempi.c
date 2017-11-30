@@ -11,20 +11,21 @@
 double boundaryval(int i, int m);
 
 // The No.0 node scatter edge data to every node. The other nodes receive edge data.
-double ** scatter_vector(double **sendbuf, int*block_size, int N_modi,int cur_rank, int comm_size, MPI_Datatype *pDATATYPE, MPI_Comm *pcomm) {
+double ** scatter_vector(double **sendbuf, int *block_size, int N_modi,int cur_rank, int comm_size, MPI_Datatype DATATYPE, MPI_Comm *pcomm) {
   double **edge = (double **) arralloc(sizeof(double), 2, block_size[0], N_modi);
+  MPI_Request *request = (MPI_Request *)malloc( comm_size*sizeof(MPI_Request) );
+  MPI_Status status;
+
   if (cur_rank == 0)  {
-    MPI_Request *request = (MPI_Request *)malloc( comm_size*sizeof(MPI_Request) );
-    MPI_Status status;
     int cur_coods[2] = {0,0};
     // The No.0 node send data to the other nodes.
     for (int i=1; i < comm_size; i++) {
       MPI_Cart_coords(*pcomm, i, 2, cur_coods) ;
-      MPI_Issend(&sendbuf[cur_coods[0]*block_size[0]][cur_coods[1]*block_size[1]],1,*pDATATYPE,i,5,*pcomm,&request[i-1]);
+      MPI_Issend(&sendbuf[cur_coods[0]*block_size[0]][cur_coods[1]*block_size[1]],1,DATATYPE,i,5,*pcomm,&request[i-1]);
     }
     // The No.0 node copy data to its own edge data vector.
-    for (i=0; i<block_size[0]; i++)
-      for (j=0; j<block_size[1]; j++)
+    for (int i=0; i<block_size[0]; i++)
+      for (int j=0; j<block_size[1]; j++)
         edge[i][j] = sendbuf[i][j];
     // The No.0 node wait for all the responses.
     for (i=0 ; i < comm_size ; i++) {
@@ -40,7 +41,7 @@ double ** scatter_vector(double **sendbuf, int*block_size, int N_modi,int cur_ra
   return edge;
 }
 
-int gather_vector(double **recvbuf,double **localimg,int*block_size,int cur_rank,int comm_size,MPI_Dataype *pDATATYPE,MPI_Comm *pcomm) {
+int gather_vector(double **recvbuf,double **localimg,int *block_size,int cur_rank,int comm_size,MPI_Datatype DATATYPE,MPI_Comm *pcomm) {
   if (cur_rank == 0)  {
     MPI_Request *request = (MPI_Request *)malloc( comm_size*sizeof(MPI_Request) );
     MPI_Status status;
@@ -48,7 +49,7 @@ int gather_vector(double **recvbuf,double **localimg,int*block_size,int cur_rank
     // The No.0 node recv data from the other nodes and save it in a temporary buffer.
     for (int i=1; i < comm_size; i++) {
       MPI_Cart_coords(*pcomm, i, 2, rcv_coods) ;
-      MPI_Irecv(&recvbuf[rcv_coods[0]*block_size[0]][rcv_coods[1]*block_size[1]],1,*pDATATYPE,i,6,*pcomm,&request[i-1]);
+      MPI_Irecv(&recvbuf[rcv_coods[0]*block_size[0]][rcv_coods[1]*block_size[1]],1,DATATYPE,i,6,*pcomm,&request[i-1]);
     }
     // The No.0 node copy local edge data to the complete data vector.
     for (int i=0; i<block_size[0]; i++)
@@ -72,9 +73,9 @@ int gather_vector(double **recvbuf,double **localimg,int*block_size,int cur_rank
 int main (int argc, char **argv)
 {
   double **edge, **masterbuf, **sendbuf, **buf;
-  double temp[1][1] = {1};
-  sendbuf = &temp;
-  masterbuf = &temp;
+  double **temp = (double **)arralloc(sizeof(double), 2, 1, 1 );
+  sendbuf = temp;
+  masterbuf = temp;
 
   int i, j, iter, maxiter, N, M, M_modi, N_modi;
   int block_size[2] = {0,0};
@@ -160,7 +161,7 @@ int main (int argc, char **argv)
   MPI_Type_vector(block_size[0], block_size[1], N_modi, MPI_DOUBLE, &DT_BLOCK);
   MPI_Type_commit(&DT_BLOCK);
   
-  edge = (double**)scatter_vector(sendbuf, &block_size, cart_rank, size, &DT_BLOCK, &cart_comm);
+  edge = (double**)scatter_vector(sendbuf, block_size, cart_rank, size, DT_BLOCK, &cart_comm);
 
   double **pnew, **pold;
   double **odd  = (double **) arralloc(sizeof(double), 2, block_size[0]+2, block_size[1]+2);
@@ -176,6 +177,7 @@ int main (int argc, char **argv)
 
   // Set the fixed boundary value.
   int cur_coods[2] = {0,0};
+  double val;
   MPI_Cart_coords(cart_comm, cart_rank, 2, cur_coods) ;
   if (bottom_nbr == MPI_PROC_NULL )  {
     for ( i=1 ; i < block_size[0]+1 ; i++)  {
