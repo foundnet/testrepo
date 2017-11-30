@@ -108,6 +108,9 @@ int main (int argc, char **argv)
   int cart_rank;
   MPI_Comm_rank(cart_comm, &cart_rank);
 
+
+  printf("CART_RANK:%d  O_RANK:%d DIM[0]%d DIM[1]%d Left:%d Right:%d Top:%d Bottom:%d\n",cart_rank,rank,dims[0],dims[1],left_nbr,right_nbr,top_nbr,bottom_nbr);
+
 /**
 *   STEP 2 : 
 *            
@@ -153,15 +156,18 @@ int main (int argc, char **argv)
 */
   }
 
+  printf("CART_RANK:%d  Before Bcast:B-SIZE[0] %d B-SIZE[1] %d M_MODI %d N_MODI %d\n",cart_rank,block_size[0],block_size[1],M_modi,N_modi);
+  
   MPI_Bcast(&block_size, 2, MPI_INT, 0, cart_comm) ;
   MPI_Bcast(&N_modi, 1, MPI_INT, 0, cart_comm) ;
-
+  printf("CART_RANK:%d  After Bcast:B-SIZE[0] %d B-SIZE[1] %d M_MODI %d N_MODI %d\n",cart_rank,block_size[0],block_size[1],M_modi,N_modi);
+ 
   // Create new derived datatype to transfer data
   MPI_Datatype DT_BLOCK;
   MPI_Type_vector(block_size[0], block_size[1], N_modi, MPI_DOUBLE, &DT_BLOCK);
   MPI_Type_commit(&DT_BLOCK);
   
-  edge = (double**)scatter_vector(sendbuf, block_size, N_modi, cart_rank, size, DT_BLOCK, &cart_comm);
+//  edge = (double**)scatter_vector(sendbuf, block_size, N_modi, cart_rank, size, DT_BLOCK, &cart_comm);
 
   double **pnew, **pold;
   double **odd  = (double **) arralloc(sizeof(double), 2, block_size[0]+2, block_size[1]+2);
