@@ -22,6 +22,7 @@ double ** scatter_vector(double **sendbuf, int *block_size, int N_modi,int cur_r
     for (int i=1; i < comm_size; i++) {
       MPI_Cart_coords(*pcomm, i, 2, cur_coods) ;
       MPI_Issend(&sendbuf[cur_coods[0]*block_size[0]][cur_coods[1]*block_size[1]],1,DATATYPE,i,5,*pcomm,&request[i-1]);
+      printf("CART_RANK:0  SCATTER SEND-%d POS-I-%d J-%d \n",i,cur_coods[0]*block_size[0],cur_coods[1]*block_size[1]);
     }
     // The No.0 node copy data to its own edge data vector.
     for (int i=0; i<block_size[0]; i++)
@@ -31,10 +32,12 @@ double ** scatter_vector(double **sendbuf, int *block_size, int N_modi,int cur_r
     for (int i=0 ; i < comm_size ; i++) {
       MPI_Wait(&request[i], &status);
     }
+    printf("CART_RANK:0 SCATTER SEND ALL DONE\n")
   }
   else {
     // The other nodes receive data and put them in edge vector.
     MPI_Recv(&edge[0][0], 1, DATATYPE, 0, 5, *pcomm, &status);
+    printf("CART_RANK:%d  SCATTER RECVED\n",cur_rank);
   }
 
   free(request);
@@ -50,7 +53,7 @@ int gather_vector(double **recvbuf,double **localimg,int *block_size,int cur_ran
     for (int i=1; i < comm_size; i++) {
       MPI_Cart_coords(*pcomm, i, 2, rcv_coods) ;
       MPI_Irecv(&recvbuf[rcv_coods[0]*block_size[0]][rcv_coods[1]*block_size[1]],1,DATATYPE,i,6,*pcomm,&request[i-1]);
-      printf("CART_RANK:0  SCATTER SEND-%d POS-I-%d J-%d \n",i,rcv_coods[0]*block_size[0],rcv_coods[1]*block_size[1]);
+      printf("CART_RANK:0  GATHER RECV-%d POS-I-%d J-%d \n",i,rcv_coods[0]*block_size[0],rcv_coods[1]*block_size[1]);
     }
     // The No.0 node copy local edge data to the complete data vector.
     for (int i=0; i<block_size[0]; i++)
@@ -64,7 +67,7 @@ int gather_vector(double **recvbuf,double **localimg,int *block_size,int cur_ran
   else {
     // The other nodes send their local image data to No.0 node.
     MPI_Ssend(&localimg[0][0], 1, DATATYPE, 0, 6, *pcomm);
-    printf("CART_RANK:%d  SCATTER RECVED",cur_rank);
+    printf("CART_RANK:%d  GATHER SEND\n",cur_rank);
   }
 
   free(request);
