@@ -174,13 +174,29 @@ int main (int argc, char **argv)
   
   edge = (double**)scatter_vector(sendbuf, block_size, N_modi, cart_rank, size, DT_BLOCK, &cart_comm);
 
+  // Set the working range by iterate the edge vector.
+  int range[2] = {block_size[0] , block_size[1]};
+  for (i=0 ; i < block_size[0] ; i++)  {
+    if (edge[i][0] == DBL_MAX) {
+      range[0] = i;
+      break ;
+    }
+  }
+  for (j=0 ; j < block_size[1] ; j++)  {
+    if (edge[0][j] == DBL_MAX) {
+      range[1] = j;
+      break ;
+    }
+  }
+  printf("CART_RANK:%d  RANGE BLOCK:R-SIZE[0] %d R-SIZE[1] %d \n",cart_rank,range[0],range[1]);
+
   double **pnew, **pold;
-  double **odd  = (double **) arralloc(sizeof(double), 2, block_size[0]+2, block_size[1]+2);
-  double **even  = (double **) arralloc(sizeof(double), 2, block_size[0]+2, block_size[1]+2);
+  double **odd  = (double **) arralloc(sizeof(double), 2, range[0]+2, range[1]+2);
+  double **even  = (double **) arralloc(sizeof(double), 2, range[0]+2, range[1]+2);
   
   // Initialize the image vector.
-  for ( i=0; i < block_size[0]+2 ; i++ ) {
-    for ( j=0 ; j < block_size[1]+2 ; j++)  {
+  for ( i=0; i < range[0]+2 ; i++ ) {
+    for ( j=0 ; j < range[1]+2 ; j++)  {
 	    odd[i][j] = 255.0;
       even[i][j] = 255.0;
     }
@@ -191,22 +207,24 @@ int main (int argc, char **argv)
   double val;
   MPI_Cart_coords(cart_comm, cart_rank, 2, cur_coods) ;
   if (bottom_nbr == MPI_PROC_NULL )  {
-    for ( i=1 ; i < block_size[0]+1 ; i++)  {
+    for ( i=1 ; i < range[0]+1 ; i++)  {
       /* compute sawtooth value */
       val = boundaryval(i+cur_coods[0]*block_size[0], M);
 
       odd[i][0] = (int)(255.0*val);
       even[i][0] = (int)(255.0*val);
     }
+    printf("CART_RANK:%d  SETFIXB BOT [FROM%d TO %d][0] M-%d\n",cart_rank,1+cur_coods[0]*block_size[0],range[0]+cur_coods[0]*block_size[0],M);
   }
   else if (top_nbr == MPI_PROC_NULL )  {
-    for ( i=1 ; i < block_size[0]+1 ; i++)  {
+    for ( i=1 ; i < range[0]+1 ; i++)  {
       /* compute sawtooth value */
       val = boundaryval(i+cur_coods[0]*block_size[0], M);
 
-      odd[i][block_size[1]+1] = (int)(255.0*(1.0-val));
-      even[i][block_size[1]+1] = (int)(255.0*(1.0-val));
+      odd[i][range[1]+1] = (int)(255.0*(1.0-val));
+      even[i][range[1]+1] = (int)(255.0*(1.0-val));
     }
+    printf("CART_RANK:%d  SETFIXB TOP [FROM%d TO %d][%d] M-%d\n",cart_rank,1+cur_coods[0]*block_size[0],range[0]+cur_coods[0]*block_size[0],range[1]+1,M);
   }
   iter = 0 ;
 
