@@ -9,9 +9,11 @@ EXE=	imagempi
 
 SRC= \
 	imagempi.c \
+	arralloc.c \
 	pgmio.c
 
 INC=\
+	arralloc.h  \
 	pgmio.h
 
 #
