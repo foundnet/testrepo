@@ -6,36 +6,116 @@
 #include "arralloc.h"
 #include "pgmio.h"
 
+typedef enum _Direction {I-ROW,J-COLUMN} Direction;
+
+int insertdataline(double *buff, int M, int N, Directon direct, int count, double value) {
+  if (direct == I-ROW )  {
+      double *pdata = &buff[M*N];
+      for (int i=0; i<count; i++)
+        for (int j=0; j < N; j++) {
+          *pdata = value;
+          pdata ++;
+        }
+  }
+  else if (direct == J-COLUMN) {
+
+  }
+}
+
+double *generateblockbuff(int M, int N, int *dims, int *coord, double *masterbuff, int *MP, int *NP),  {
+
+}
+
+// The No.0 node scatter edge data to every node. The other nodes receive edge data.
+double ** scatter_vector(double **sendbuf, int*block_size, int cur_rank, int comm_size, MPI_Type *pDATATYPE, MPI_Comm *pcomm) {
+  double **edge = (double **) arralloc(sizeof(double), 2, block_size[0], block_size[1]);
+  if (cur_rank == 0)  {
+    MPI_Request *request = (MPI_Request *)malloc( comm_size*sizeof(MPI_Request) );
+    MPI_Status status;
+    int cur_coods[2] = {0,0};
+    // The No.0 node send data to the other nodes.
+    for (int i=1; i < comm_size; i++) {
+      MPI_Cart_coords(*pcomm, i, 2, cur_coods) ;
+      MPI_Issend(&sendbuf[cur_coods[0]*block_size[0]][cur_coods[1]*block_size[1]],1,*pDATATYPE,i,5,*pcomm,&request[i-1]);
+    }
+    // The No.0 node copy data to its own edge data vector.
+    for (i=0; i<block_size[0]; i++)
+      for (j=0; j<block_size[1]; j++)
+        edge[i][j] = sendbuf[i][j];
+    // The No.0 node wait for all the responses.
+    for (i=0 ; i < comm_size ; i++) {
+      MPI_Wait(&request[i], &status);
+    }
+  }
+  else {
+    // The other nodes receive data and put them in edge vector.
+    MPI_Recv(&edge[0][0], block_size[0]*block_size[1],MPI_DOUBLE,0,5,*pcomm,&status);
+  }
+
+  free(request);
+  return edge;
+}
+
+int gather_vector(double **recvbuf,double **localimg,int*block_size,int cur_rank,int comm_size,MPI_Comm *pcomm) {
+  double **buf = (double **) arralloc(sizeof(double), 3, comm_size, block_size[0], block_size[1]);
+  if (cur_rank == 0)  {
+    MPI_Request *request = (MPI_Request *)malloc( comm_size*sizeof(MPI_Request) );
+    MPI_Status status;
+    int rcv_coods[2] = {0,0};
+    // The No.0 node recv data from the other nodes and save it in a temporary buffer.
+    for (int i=1; i < comm_size; i++) {
+      MPI_Cart_coords(*pcomm, i, 2, rcv_coods) ;
+      MPI_Irecv(&buf[i][0][0],block_size[0]*block_size[1],MPI_DOUBLE,i,6,*pcomm,&request[i-1]);
+    }
+    // The No.0 node copy local edge data to the complete data vector.
+    for (int i=0; i<block_size[0]; i++)
+      for (j=0; j<block_size[1]; j++)
+        recvbuf[i][j] = localedge[i][j] ;
+    // The No.0 node wait for all the receives finished.
+    for (int i=0 ; i < comm_size ; i++) {
+      MPI_Wait(&request[i], &status);
+    }
+    //Transfer all the data from temporary buffer to receive buffer.
+    for (int index=1 ; index < comm_size; i++)  {
+      MPI_Cart_coords(*pcomm, index, 2, rcv_coods) ;
+      for (i-0 ; i < block_size[0] ; i++)
+        for (j=0 ; j < block_size[1] ; j++)
+          recvbuf[rcv_coods[0]*block_size[0]+i][rcv_coods[1]*block_size[1]+j] = buf[index][i][j];
+    }
+  }
+  else {
+    // The other nodes send their local image data to No.0 node.
+    MPI_Ssend(&localimg[0][0], block_size[0]*block_size[1],MPI_DOUBLE,0,6,*pcomm,&status);
+  }
+
+  free(request);
+  free(buf);
+  return 1;
+}
+
 
 int main (int argc, char **argv)
 {
+  double **old, **new, **edge, **masterbuf, **sendbuf, **buf;
+  double temp[1][1] = {1};
+  sendbuf = masterbuf = &temp[0][0];
 
-  int i, j, iter, maxiter;
+  int i, j, iter, maxiter, N, M, M_modi, N_modi;
+  int block_size[2] = {0,0};
+
   char *filename;
 
-
-  masterbuf = (double **) arralloc(sizeof(double), 2, M , N );
-  buf       = (double **) arralloc(sizeof(double), 2, MP, NP);
-
-  new  = (double **) arralloc(sizeof(double), 2, MP+2, NP+2);
-  old  = (double **) arralloc(sizeof(double), 2, MP+2, NP+2);
-  edge = (double **) arralloc(sizeof(double), 2, MP+2, NP+2);
-
-  next = rank + 1;
-  prev = rank - 1;
-  
-  
-  int rank, size, next, prev;
-  MPI_Status status;
+  int rank, size;
 
   MPI_Init(&argc, &argv);
 
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  /**
-   *Virtual Topology Opetations: Create and manipulate the topology
-  **/
+/**
+*   STEP 1 : Virtual Topology Opetations
+*            Create and manipulate the topology for communication
+**/
 
   //Create the virtual Cartesian Topology
   MPI_Comm cart_comm;
@@ -50,7 +130,79 @@ int main (int argc, char **argv)
   MPI_Cart_shift( cart_comm, 1, 1, &bottom_nbr, &top_nbr );
   int cart_rank;
   MPI_Comm_rank(cart_comm, &cart_rank);
-  
 
+/**
+*   STEP 2 : 
+*            
+**/
+
+  //The No.0 node read the edge data and calculate the subvector's size.
+  //Then it broadcast the size data and scatter  to the other nodes.
+  if(cart_rank == 0)  {
+    if (argc > 1) {
+      filename = argv[1];
+    } 
+    else {
+      printf("Usage: ./imagecalc <edge file name>\n");
+      return 0;
+    }
+    pgmsize(filename,&M, &N);
+    block_size[0] = M%dims[0] == 0? M/dims[0]:M/dims[0]+1;
+    block_size[1] = N%dims[1] == 0? N/dims[1]:N/dims[1]+1;
+    //Enlarge the data vector's size to make it can be divided exactly by the dims
+    //So, we can use derived datatype to distribute and gather data
+    M_modi = block_size[0] * dims[0];
+    N_modi = block_size[1] * dims[1];
+
+    masterbuf = (double **)arralloc(sizeof(double), 2, M , N );
+    pgmread(filename, &masterbuf[0][0], M, N);
+    
+    if (M_modi == M && N_modi == N)  sendbuf = masterbuf;
+    else {
+      sendbuf = (double **)arralloc(sizeof(double), 2, M_modi , N_modi );
+      for (int i=0; i<M_modi; i++)
+        for (int j=0; j<N_modi; j++) {
+            if ( i<M && j<N )  sendbuf[i][j] = masterbuf[i][j] ;
+            else sendbuf[i][j] = 255;
+        }
+    }
+/*     printf("Processing %d x %d image on %d processes\n", M, N, P);
+    printf("Number of iterations = %d\n", MAXITER);
+  
+    filename = "edge192x128.pgm";
+  
+      printf("\nReading <%s>\n", filename);
+     printf("\n");
+*/
+  }
+
+  MPI_Bcast(&block_size, 2, MPI_INT, 0, cart_comm) ;
+  MPI_Bcast(&N_modi, 1, MPI_INT, 0, cart_comm) ;
+/**
+*   Distribute Data Preparation: 
+**/
+
+  //Create 2D vector datatype for data scatter.
+  
+  // Create new derived datatype to transfer data
+  MPI_Type DT_BLOCK;
+  MPI_Type_vector(block_size[0], block_size[1], N_modi, MPI_DOUBLE, &DT_BLOCK);
+  MPI_Type_commit(&DT_BLOCK);
+  
+  edge = scatter_vector(sendbuf, &block_size, cart_rank, &cart_comm)
+
+  odd  = (double **) arralloc(sizeof(double), 2, block_size[0]+2, block_size[1]+2);
+  even  = (double **) arralloc(sizeof(double), 2, block_size[0]+2, block_size[1]+2);
+  
+  for ( i=0; i < block_size[0]+2 ; i++ ） {
+    for ( j=0 ; j < block_size[1]+2 ; j++)  {
+	    even[i][j]=255.0;
+      odd[i][j];
+    }
+  }
+
+  iter = 0 ;
+
+}
 
 
