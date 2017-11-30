@@ -23,7 +23,7 @@ int main(int argc, char* argv[]){
   MPI_Status status;
 
   double sendmatrix[N][N], recvmatrix[N][N];
-  double buff[N][1];
+  double buff[N][N];
   MPI_Datatype mcoltype;
 
 
