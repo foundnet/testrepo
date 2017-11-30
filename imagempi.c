@@ -28,13 +28,13 @@ double ** scatter_vector(double **sendbuf, int *block_size, int N_modi,int cur_r
       for (int j=0; j<block_size[1]; j++)
         edge[i][j] = sendbuf[i][j];
     // The No.0 node wait for all the responses.
-    for (i=0 ; i < comm_size ; i++) {
+    for (int i=0 ; i < comm_size ; i++) {
       MPI_Wait(&request[i], &status);
     }
   }
   else {
     // The other nodes receive data and put them in edge vector.
-    MPI_Recv(&edge[0][0], 1, *pDATATYPE, 0, 5, *pcomm, &status);
+    MPI_Recv(&edge[0][0], 1, DATATYPE, 0, 5, *pcomm, &status);
   }
 
   free(request);
@@ -42,9 +42,9 @@ double ** scatter_vector(double **sendbuf, int *block_size, int N_modi,int cur_r
 }
 
 int gather_vector(double **recvbuf,double **localimg,int *block_size,int cur_rank,int comm_size,MPI_Datatype DATATYPE,MPI_Comm *pcomm) {
+  MPI_Request *request = (MPI_Request *)malloc( comm_size*sizeof(MPI_Request) );
+  MPI_Status status;
   if (cur_rank == 0)  {
-    MPI_Request *request = (MPI_Request *)malloc( comm_size*sizeof(MPI_Request) );
-    MPI_Status status;
     int rcv_coods[2] = {0,0};
     // The No.0 node recv data from the other nodes and save it in a temporary buffer.
     for (int i=1; i < comm_size; i++) {
@@ -53,16 +53,16 @@ int gather_vector(double **recvbuf,double **localimg,int *block_size,int cur_ran
     }
     // The No.0 node copy local edge data to the complete data vector.
     for (int i=0; i<block_size[0]; i++)
-      for (j=0; j<block_size[1]; j++)
+      for (int j=0; j<block_size[1]; j++)
         recvbuf[i][j] = localimg[i][j] ;
     // The No.0 node wait for all the receives finished.
-    for (int i=0 ; i < comm_size ; i++) {
+    for (i=0 ; i < comm_size ; i++) {
       MPI_Wait(&request[i], &status);
     }
   }
   else {
     // The other nodes send their local image data to No.0 node.
-    MPI_Ssend(&localimg[0][0], 1, *pDATATYPE, 0, 6, *pcomm,&status);
+    MPI_Ssend(&localimg[0][0], 1, DATATYPE, 0, 6, *pcomm);
   }
 
   free(request);
@@ -157,11 +157,11 @@ int main (int argc, char **argv)
   MPI_Bcast(&N_modi, 1, MPI_INT, 0, cart_comm) ;
 
   // Create new derived datatype to transfer data
-  MPI_Type DT_BLOCK;
+  MPI_Datatype DT_BLOCK;
   MPI_Type_vector(block_size[0], block_size[1], N_modi, MPI_DOUBLE, &DT_BLOCK);
   MPI_Type_commit(&DT_BLOCK);
   
-  edge = (double**)scatter_vector(sendbuf, block_size, cart_rank, size, DT_BLOCK, &cart_comm);
+  edge = (double**)scatter_vector(sendbuf, block_size, N_modi, cart_rank, size, DT_BLOCK, &cart_comm);
 
   double **pnew, **pold;
   double **odd  = (double **) arralloc(sizeof(double), 2, block_size[0]+2, block_size[1]+2);
