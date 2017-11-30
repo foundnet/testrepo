@@ -32,7 +32,7 @@ double ** scatter_vector(double **sendbuf, int *block_size, int N_modi,int cur_r
     for (int i=0 ; i < comm_size ; i++) {
       MPI_Wait(&request[i], &status);
     }
-    printf("CART_RANK:0 SCATTER SEND ALL DONE\n")
+    printf("CART_RANK:0 SCATTER SEND ALL DONE\n");
   }
   else {
     // The other nodes receive data and put them in edge vector.
