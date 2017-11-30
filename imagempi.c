@@ -174,7 +174,7 @@ int main (int argc, char **argv)
   MPI_Type_vector(block_size[0], block_size[1], img_modisize[1], MPI_DOUBLE, &DT_BLOCK);
   MPI_Type_commit(&DT_BLOCK);
   
-  edge = (double**)scatter_vector(sendbuf, block_size, N_modi, cart_rank, size, DT_BLOCK, &cart_comm);
+  edge = (double**)scatter_vector(sendbuf, block_size, img_modisize[1], cart_rank, size, DT_BLOCK, &cart_comm);
 
   // Set the working range by iterate the edge vector.
   int range[2] = {block_size[0] , block_size[1]};
