@@ -56,7 +56,7 @@ int gather_vector(double **recvbuf,double **localimg,int *block_size,int cur_ran
       for (int j=0; j<block_size[1]; j++)
         recvbuf[i][j] = localimg[i][j] ;
     // The No.0 node wait for all the receives finished.
-    for (i=0 ; i < comm_size ; i++) {
+    for (int i=0 ; i < comm_size ; i++) {
       MPI_Wait(&request[i], &status);
     }
   }
