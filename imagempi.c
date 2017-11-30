@@ -216,7 +216,7 @@ int main (int argc, char **argv)
       odd[i][0] = (int)(255.0*val);
       even[i][0] = (int)(255.0*val);
     }
-    printf("CART_RANK:%d  SETFIXB BOT [FROM%d TO %d][0] M-%d\n",cart_rank,1+cur_coods[0]*block_size[0],range[0]+cur_coods[0]*block_size[0],M);
+    printf("CART_RANK:%d  SETFIXB BOT [FROM%d TO %d][0] M-%d\n",cart_rank,1+cur_coods[0]*block_size[0],range[0]+cur_coods[0]*block_size[0],img_size[0]);
   }
   else if (top_nbr == MPI_PROC_NULL )  {
     for ( i=1 ; i < range[0]+1 ; i++)  {
@@ -226,7 +226,7 @@ int main (int argc, char **argv)
       odd[i][range[1]+1] = (int)(255.0*(1.0-val));
       even[i][range[1]+1] = (int)(255.0*(1.0-val));
     }
-    printf("CART_RANK:%d  SETFIXB TOP [FROM%d TO %d][%d] M-%d\n",cart_rank,1+cur_coods[0]*block_size[0],range[0]+cur_coods[0]*block_size[0],range[1]+1,M);
+    printf("CART_RANK:%d  SETFIXB TOP [FROM%d TO %d][%d] M-%d\n",cart_rank,1+cur_coods[0]*block_size[0],range[0]+cur_coods[0]*block_size[0],range[1]+1,img_size[0]);
   }
   iter = 0 ;
 
