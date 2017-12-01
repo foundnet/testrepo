@@ -10,6 +10,7 @@ EXE=	imagempi \
 
 SRC= \
 	imagempi.c \
+	imagenew.c \
 	arralloc.c \
 	pgmio.c
 
