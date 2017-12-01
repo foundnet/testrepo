@@ -3,6 +3,7 @@
 #include <math.h>
 #include <mpi.h>
 #include <float.h>
+#include <string.h>
 
 #include "arralloc.h"
 #include "pgmio.h"
@@ -279,6 +280,7 @@ int main (int argc, char **argv) {
   pnew = even;
   MPI_Request send_req[4], recv_req[4];
 
+/*
   while (iter < 500) {
     // First, swap the halos using the old map
     Iswaphalos(pold, nbr_rank, range, DT_ROWHALO, DT_COLHALO, &cart_comm, send_req, recv_req);
@@ -302,7 +304,8 @@ int main (int argc, char **argv) {
   for (i=1 ; i < range[0]+1 ;i++)
      for (j=1 ; j < range[1]+1 ; j++)
        edge[i-1][j-1] = pold[i][j] ;
-  
+*/
+  memset(&masterbuf[0][0], 0, sizeof(double)*img_size[0]*img_size[1]); 
   gather_vector(sendbuf, edge, block_size, cart_rank, size, DT_BLOCK, &cart_comm);
   
   if (cart_rank == 0)  {
