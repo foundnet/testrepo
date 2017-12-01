@@ -4,6 +4,7 @@
 #include <mpi.h>
 #include <float.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "arralloc.h"
 #include "pgmio.h"
@@ -102,7 +103,7 @@ void Iswaphalos(double **cur_image, int*nbr_rank, int *range, MPI_Datatype rhalo
   }
 }
 
-void Iwaithalos(int*nbr_rank, MPI_Request *send_req, MPI_Request *recv_req) {
+void Iwaithalos(int*nbr_rank, MPI_Request send_req[], MPI_Request recv_req[]) {
   MPI_Status status;
   for (int r=0 ; r < 4 ; r++)  {
     if (nbr_rank[r] == MPI_PROC_NULL)  continue;
@@ -300,16 +301,17 @@ while (iter < 1500 ) {
     // Second, calculate the centre cells which will not be affected by halos
     result = calculateimg(pnew, pold, edge, 2, 2, range[0]-1, range[1]-1, &sum_cell); 
     if (result > delta_max )  delta_max = result;
+    sleep(1);
     //Third, wait for all the asyn tasks finished.
     Iwaithalos(nbr_rank, send_req, recv_req);
     //Finally, calculate the cells that will be affected by halos
-//    result = calculateimg(pnew, pold, edge, 1, 1, 1, range[1], &sum_cell);
+    result = calculateimg(pnew, pold, edge, 1, 1, 1, range[1], &sum_cell);
     if (result > delta_max )  delta_max = result;   
-//    result = calculateimg(pnew, pold, edge, range[0], 1, range[0], range[1], &sum_cell);
+    result = calculateimg(pnew, pold, edge, range[0], 1, range[0], range[1], &sum_cell);
     if (result > delta_max )  delta_max = result;   
-//    result = calculateimg(pnew, pold, edge, 2, 1, range[0]-1, 1, &sum_cell);
+    result = calculateimg(pnew, pold, edge, 2, 1, range[0]-1, 1, &sum_cell);
     if (result > delta_max )  delta_max = result;   
-//    result = calculateimg(pnew, pold, edge, 2, range[1], range[0]-1, range[1], &sum_cell);
+    result = calculateimg(pnew, pold, edge, 2, range[1], range[0]-1, range[1], &sum_cell);
     if (result > delta_max )  delta_max = result;   
     //Swap the pold and pnew pointer 
     double **pswap = pnew;
