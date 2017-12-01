@@ -186,7 +186,7 @@ int main (int argc, char **argv) {
 
     masterbuf = (double **)arralloc(sizeof(double), 2, img_size[0] , img_size[1] );
     pgmread(filename, &masterbuf[0][0], img_size[0], img_size[1]);
-    
+    pgmwrite("backup_img.pgm", &masterbuf[0][0], img_size[0], img_size[1]);
     if (img_size[0] == img_modisize[0] && img_size[1] == img_modisize[1])  sendbuf = masterbuf;
     else {
       sendbuf = (double **)arralloc(sizeof(double), 2, img_modisize[0] , img_modisize[1] );
@@ -196,7 +196,7 @@ int main (int argc, char **argv) {
             else sendbuf[i][j] = DBL_MAX;
         }
     }
-    pgmwrite("backup_img.pgm", &masterbuf[0][0], img_size[1], img_size[0]);
+
   }
 
   MPI_Bcast(&block_size, 2, MPI_INT, 0, cart_comm) ;
