@@ -307,14 +307,15 @@ int main (int argc, char **argv) {
        edge[i-1][j-1] = pold[i][j] ;
 */
 //  memset(&masterbuf[0][0], 0, sizeof(double)*img_size[0]*img_size[1]); 
+  sendbuf = (double **)arralloc(sizeof(double), 2, img_modisize[0] , img_modisize[1] ;
   gather_vector(sendbuf, edge, block_size, cart_rank, size, DT_BLOCK, &cart_comm);
  
   if (cart_rank == 0)  {
-/*    if (sendbuf != masterbuf) 
+    if (sendbuf != masterbuf) 
       for (i=0 ; i < img_size[0] ; i++)
         for (j=0 ; j < img_size[1] ; j++)
           masterbuf[i][j] = sendbuf[i][j];
-*/    
+    
     pgmwrite("parallelimg.pgm", &masterbuf[0][0], img_size[0], img_size[1]);
   }
 
