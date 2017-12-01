@@ -22,7 +22,7 @@ double ** scatter_vector(double **sendbuf, int *block_size, int N_modi,int cur_r
     // The No.0 node send data to the other nodes.
     for (int i=1; i < comm_size; i++) {
       MPI_Cart_coords(*pcomm, i, 2, cur_coods) ;
-      MPI_Issend(&sendbuf[cur_coods[0]*block_size[0]][cur_coods[1]*block_size[1]],1,DATATYPE,i,5,*pcomm,&request[i-1]);
+      MPI_Issend(&sendbuf[cur_coods[0]*block_size[0]][cur_coods[1]*block_size[1]],1,DATATYPE,i,5,*pcomm,&request[i]);
       printf("CART_RANK:0  SCATTER SEND-%d POS-I-%d J-%d \n",i,cur_coods[0]*block_size[0],cur_coods[1]*block_size[1]);
     }
     // The No.0 node copy data to its own edge data vector.
@@ -30,7 +30,7 @@ double ** scatter_vector(double **sendbuf, int *block_size, int N_modi,int cur_r
       for (int j=0; j<block_size[1]; j++)
         edge[i][j] = sendbuf[i][j];
     // The No.0 node wait for all the responses.
-    for (int i=0 ; i < comm_size ; i++) {
+    for (int i=1 ; i < comm_size ; i++) {
       MPI_Wait(&request[i], &status);
     }
     printf("CART_RANK:0 SCATTER SEND ALL DONE\n");
@@ -53,7 +53,7 @@ int gather_vector(double **recvbuf,double **localimg,int *block_size,int cur_ran
     // The No.0 node recv data from the other nodes and save it in a temporary buffer.
     for (int i=1; i < comm_size; i++) {
       MPI_Cart_coords(*pcomm, i, 2, rcv_coods) ;
-      MPI_Irecv(&recvbuf[rcv_coods[0]*block_size[0]][rcv_coods[1]*block_size[1]],1,DATATYPE,i,6,*pcomm,&request[i-1]);
+      MPI_Irecv(&recvbuf[rcv_coods[0]*block_size[0]][rcv_coods[1]*block_size[1]],1,DATATYPE,i,6,*pcomm,&request[i]);
       printf("CART_RANK:0  GATHER RECV-%d POS-I-%d J-%d \n",i,rcv_coods[0]*block_size[0],rcv_coods[1]*block_size[1]);
     }
     // The No.0 node copy local edge data to the complete data vector.
@@ -61,10 +61,11 @@ int gather_vector(double **recvbuf,double **localimg,int *block_size,int cur_ran
       for (int j=0; j<block_size[1]; j++)
         recvbuf[i][j] = localimg[i][j] ;
     // The No.0 node wait for all the receives finished.
-    for (int i=0 ; i < comm_size ; i++) {
+    for (int i=1 ; i < comm_size ; i++) {
       MPI_Wait(&request[i], &status);
     }
-  }
+    printf("CART_RANK:0 GATHER RECV ALL DONE\n");
+ }
   else {
     // The other nodes send their local image data to No.0 node.
     MPI_Ssend(&localimg[0][0], 1, DATATYPE, 0, 6, *pcomm);
@@ -298,6 +299,21 @@ int main (int argc, char **argv) {
   }  
 
   // After the calculation , the No.0 node gather the data together and save to file.
+  for (i=1 ; i < range[0]+1 ;i++)
+     for (j=1 ; j < range[1]+1 ; j++)
+       edge[i-1][j-1] = pold[i][j] ;
+  
+  gather_vector(sendbuf, edge, block_size, cart_rank, size, DT_BLOCK, &cart_pcomm);
+  
+  if (cart_rank == 0)  {
+    if (sendbuf != masterbuf) 
+      for (i=0 ; i < img_size[0] ; i++)
+        for (j=0 ; j < img_size[1] ; j++)
+          masterbuf[i][j] = sendbuf[i][j];
+    
+    pgmwrite("parallelimg.pgm", &masterbuf[0][0], img_size[0], img_size[1]);
+  }
+  
   printf("I didn't deadlock, yeah!\n");
 
   MPI_Finalize();
