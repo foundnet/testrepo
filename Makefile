@@ -5,7 +5,8 @@ CFLAGS= -O3
 
 LFLAGS=	-lm
 
-EXE=	imagempi
+EXE=	imagempi \
+        imagenew
 
 SRC= \
 	imagempi.c \
