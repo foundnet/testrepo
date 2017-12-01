@@ -118,7 +118,6 @@ double calculateimg(double **new_img, double **old_img, double **edge, int start
     for (int j=startj ; j <= endj; j++)  {
       new_img[i][j]=0.25*(old_img[i-1][j]+old_img[i+1][j]+old_img[i][j-1]+old_img[i][j+1]-edge[i-1][j-1]);
       *sumnew = *sumnew + new_img[i][j];
-      *sumold = *sumold + old_img[i][j];
       double delta = fabs(new_img[i][j]-old_img[i][j]);
       if (delta > delta_max)    delta_max = delta;
     }
@@ -299,18 +298,18 @@ int main (int argc, char **argv) {
     // First, swap the halos using the old map
     Iswaphalos(pold, nbr_rank, range, DT_ROWHALO, DT_COLHALO, &cart_comm, send_req, recv_req);
     // Second, calculate the centre cells which will not be affected by halos
-    result = calculateimg(pnew, pold, edge, 2, 2, range[0]-1, range[1]-1, *sum_cell); 
+    result = calculateimg(pnew, pold, edge, 2, 2, range[0]-1, range[1]-1, &sum_cell); 
     if (result > delta_max )  delta_max = result;
     //Third, wait for all the asyn tasks finished.
     Iwaithalos(nbr_rank, send_req, recv_req);
     //Finally, calculate the cells that will be affected by halos
-    result = calculateimg(pnew, pold, edge, 1, 1, 1, range[1], *sum_cell);
+    result = calculateimg(pnew, pold, edge, 1, 1, 1, range[1], &sum_cell);
     if (result > delta_max )  delta_max = result;   
-    result = calculateimg(pnew, pold, edge, range[0], 1, range[0], range[1], *sum_cell);
+    result = calculateimg(pnew, pold, edge, range[0], 1, range[0], range[1], &sum_cell);
     if (result > delta_max )  delta_max = result;   
-    result = calculateimg(pnew, pold, edge, 2, 1, range[0]-1, 1, *sum_cell);
+    result = calculateimg(pnew, pold, edge, 2, 1, range[0]-1, 1, &sum_cell);
     if (result > delta_max )  delta_max = result;   
-    result = calculateimg(pnew, pold, edge, 2, range[1], range[0]-1, range[1], *sum_cell);
+    result = calculateimg(pnew, pold, edge, 2, range[1], range[0]-1, range[1], &sum_cell);
     if (result > delta_max )  delta_max = result;   
     //Swap the pold and pnew pointer 
     double **pswap = pnew;
