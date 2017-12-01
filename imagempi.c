@@ -87,7 +87,7 @@ void Iswaphalos(double **cur_image, int*nbr_rank, int *range, MPI_Datatype rhalo
         break;
       case RIGHT:
         MPI_Issend(&cur_image[range[0]][1],1,rhalo,nbr_rank[r],10,*pcomm,&send_req[r]);
-        MPI_Irecv(&cur_image[range[0]+1][1],1,rhalo,nbr_rank[r],10,*pcomm.&recv_req[r]);
+        MPI_Irecv(&cur_image[range[0]+1][1],1,rhalo,nbr_rank[r],10,*pcomm,&recv_req[r]);
         break;
       case TOP:
         MPI_Issend(&cur_image[1][range[1]],1,chalo,nbr_rank[r],10,*pcomm,&send_req[r]);
@@ -110,8 +110,8 @@ void Iwaithalos(int*nbr_rank, MPI_Request *send_req, MPI_Request *recv_req) {
 }
 
 void calculateimg(double **new_img, double **old_img, double **edge, int starti, int startj, int endi, int endj) {
-  for (i=starti ; i <= endi; i++ )  {
-    for (j=startj ; j <= endj; j++)  {
+  for (int i=starti ; i <= endi; i++ )  {
+    for (int j=startj ; j <= endj; j++)  {
       new_img[i][j]=0.25*(old_img[i-1][j]+old_img[i+1][j]+old_img[i][j-1]+old_img[i][j+1]-edge[i-1][j-1]);
     }
   } 
