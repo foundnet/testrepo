@@ -78,24 +78,24 @@ int gather_vector(double **recvbuf,double **localimg,int *block_size,int cur_ran
 
 void Iswaphalos(double **cur_image, int*nbr_rank, int *range, MPI_Datatype rhalo,  \
                MPI_Datatype chalo, MPI_Comm *pcomm, MPI_Request *send_req, MPI_Request *recv_req) {
-  for (int r=0 ; r < 4 r++)  {
+  for (int r=0 ; r < 4 ; r++)  {
     if (nbr_rank[r] == MPI_PROC_NULL)  continue;
     switch (r) {
       case LEFT:
         MPI_Issend(&cur_image[1][1],1,rhalo,nbr_rank[r],10,*pcomm,&send_req[r]);
-        MPI_Irecv (&cur_image[0][1],1,rhalo,nbr_rank[r],10,*pcomm,&recv_req[r];
+        MPI_Irecv (&cur_image[0][1],1,rhalo,nbr_rank[r],10,*pcomm,&recv_req[r]);
         break;
       case RIGHT:
         MPI_Issend(&cur_image[range[0]][1],1,rhalo,nbr_rank[r],10,*pcomm,&send_req[r]);
-        MPI_Irecv(&cur_image[range[0]+1][1],1,rhalo,nbr_rank[r],10,*pcomm.&recv_req[r];
+        MPI_Irecv(&cur_image[range[0]+1][1],1,rhalo,nbr_rank[r],10,*pcomm.&recv_req[r]);
         break;
       case TOP:
         MPI_Issend(&cur_image[1][range[1]],1,chalo,nbr_rank[r],10,*pcomm,&send_req[r]);
-        MPI_Irecv(&cur_image[1][range[1]+1],1,chalo,nbr_rank[r],10,*pcomm,&recv_req[r];
+        MPI_Irecv(&cur_image[1][range[1]+1],1,chalo,nbr_rank[r],10,*pcomm,&recv_req[r]);
         break;
       case BOTTOM:
         MPI_Issend(&cur_image[1][1],1,chalo,nbr_rank[r],10,*pcomm,&send_req[r]);
-        MPI_Irecv(&cur_image[1][0],1,chalo,nbr_rank[r],10,*pcomm,&recv_req[r];
+        MPI_Irecv(&cur_image[1][0],1,chalo,nbr_rank[r],10,*pcomm,&recv_req[r]);
     }
   }
 }
@@ -106,6 +106,7 @@ void Iwaithalos(int*nbr_rank, MPI_Request *send_req, MPI_Request *recv_req) {
     if (nbr_rank[r] == MPI_PROC_NULL)  continue;
     MPI_Wait(&send_req[r], &status);
     MPI_Wait(&send_req[r], &status);
+  }
 }
 
 void calculateimg(double **new_img, double **old_img, double **edge, int starti, int startj, int endi, int endj) {
@@ -116,8 +117,7 @@ void calculateimg(double **new_img, double **old_img, double **edge, int starti,
   } 
 }
 
-int main (int argc, char **argv)
-{
+int main (int argc, char **argv) {
   double **edge, **masterbuf, **sendbuf, **buf;
   double **temp = (double **)arralloc(sizeof(double), 2, 1, 1 );
   sendbuf = temp;
