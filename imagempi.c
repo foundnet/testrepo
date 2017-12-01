@@ -319,7 +319,7 @@ int main (int argc, char **argv) {
 
     MPI_Reduce(&delta_max, &global_max, 1, MPI_DOUBLE, MPI_MAX, 0, cart_comm);
     MPI_Reduce(&sum_cell, &global_sum, 1, MPI_DOUBLE, MPI_SUM, 0, cart_comm);
-    printf("CART_RANK:%d  ITER:%d MAX:%f G-MAX:%f SUM:%f G-SUM:%f",cart_rank,iter,delta_max,global_max,sum_cell,global_sum);
+    printf("CART_RANK:%d  ITER:%d MAX:%f G-MAX:%f SUM:%f G-SUM:%f\n",cart_rank,iter,delta_max,global_max,sum_cell,global_sum);
 
   }  
 
