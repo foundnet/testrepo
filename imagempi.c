@@ -303,7 +303,7 @@ int main (int argc, char **argv) {
      for (j=1 ; j < range[1]+1 ; j++)
        edge[i-1][j-1] = pold[i][j] ;
   
-  gather_vector(sendbuf, edge, block_size, cart_rank, size, DT_BLOCK, &cart_pcomm);
+  gather_vector(sendbuf, edge, block_size, cart_rank, size, DT_BLOCK, &cart_comm);
   
   if (cart_rank == 0)  {
     if (sendbuf != masterbuf) 
@@ -313,7 +313,7 @@ int main (int argc, char **argv) {
     
     pgmwrite("parallelimg.pgm", &masterbuf[0][0], img_size[0], img_size[1]);
   }
-  
+
   printf("I didn't deadlock, yeah!\n");
 
   MPI_Finalize();
