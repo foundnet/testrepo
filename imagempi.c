@@ -282,7 +282,7 @@ int main (int argc, char **argv) {
   MPI_Request send_req[4], recv_req[4];
 
 
-  while (iter < 1) {
+  while (iter < 2) {
     // First, swap the halos using the old map
     Iswaphalos(pold, nbr_rank, range, DT_ROWHALO, DT_COLHALO, &cart_comm, send_req, recv_req);
     // Second, calculate the centre cells which will not be affected by halos
