@@ -196,6 +196,7 @@ int main (int argc, char **argv) {
             else sendbuf[i][j] = DBL_MAX;
         }
     }
+    pgmwrite("backup_img.pgm", &masterbuf[0][0], img_size[0], img_size[1]);
   }
 
   MPI_Bcast(&block_size, 2, MPI_INT, 0, cart_comm) ;
