@@ -13,7 +13,7 @@
 #define M 192
 #define N 128
 
-#define MAXITER   1
+#define MAXITER   1500
 #define PRINTFREQ  200
 
 double boundaryval(int i, int m);
