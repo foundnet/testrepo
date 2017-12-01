@@ -112,7 +112,7 @@ void Iwaithalos(int*nbr_rank, MPI_Request *send_req, MPI_Request *recv_req) {
 }
 
 double calculateimg(double **new_img, double **old_img, double **edge, int starti,   \
-                  int startj, int endi, int endj, double *sumnew, double *sumold) {
+                  int startj, int endi, int endj, double *sumnew) {
   double delta_max = 0;
   for (int i=starti ; i <= endi; i++ )  {
     for (int j=startj ; j <= endj; j++)  {
