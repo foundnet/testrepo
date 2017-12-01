@@ -282,13 +282,13 @@ int main (int argc, char **argv) {
   MPI_Request send_req[4], recv_req[4];
 
 
-  while (iter < 1500) {
+  while (iter < 1) {
     // First, swap the halos using the old map
-//    Iswaphalos(pold, nbr_rank, range, DT_ROWHALO, DT_COLHALO, &cart_comm, send_req, recv_req);
+    Iswaphalos(pold, nbr_rank, range, DT_ROWHALO, DT_COLHALO, &cart_comm, send_req, recv_req);
     // Second, calculate the centre cells which will not be affected by halos
     calculateimg(pnew, pold, edge, 2, 2, range[0]-1, range[1]-1);
     //Third, wait for all the asyn tasks finished.
-//    Iwaithalos(nbr_rank, send_req, recv_req);
+    Iwaithalos(nbr_rank, send_req, recv_req);
     //Finally, calculate the cells that will be affected by halos
     calculateimg(pnew, pold, edge, 1, 1, 1, range[1]);
     calculateimg(pnew, pold, edge, range[0], 1, range[0], range[1]);
