@@ -186,7 +186,7 @@ int main (int argc, char **argv) {
 
     masterbuf = (double **)arralloc(sizeof(double), 2, img_size[0] , img_size[1] );
     pgmread(filename, &masterbuf[0][0], img_size[0], img_size[1]);
-    pgmwrite("backup_img.pgm", &masterbuf[0][0], img_size[0], img_size[1]);
+ 
     if (img_size[0] == img_modisize[0] && img_size[1] == img_modisize[1])  sendbuf = masterbuf;
     else {
       sendbuf = (double **)arralloc(sizeof(double), 2, img_modisize[0] , img_modisize[1] );
@@ -284,11 +284,11 @@ int main (int argc, char **argv) {
 
   while (iter < 1500) {
     // First, swap the halos using the old map
-    Iswaphalos(pold, nbr_rank, range, DT_ROWHALO, DT_COLHALO, &cart_comm, send_req, recv_req);
+//    Iswaphalos(pold, nbr_rank, range, DT_ROWHALO, DT_COLHALO, &cart_comm, send_req, recv_req);
     // Second, calculate the centre cells which will not be affected by halos
     calculateimg(pnew, pold, edge, 2, 2, range[0]-1, range[1]-1);
     //Third, wait for all the asyn tasks finished.
-    Iwaithalos(nbr_rank, send_req, recv_req);
+//    Iwaithalos(nbr_rank, send_req, recv_req);
     //Finally, calculate the cells that will be affected by halos
     calculateimg(pnew, pold, edge, 1, 1, 1, range[1]);
     calculateimg(pnew, pold, edge, range[0], 1, range[0], range[1]);
