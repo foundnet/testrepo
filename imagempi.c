@@ -303,13 +303,13 @@ while (iter < 1500 ) {
     //Third, wait for all the asyn tasks finished.
     Iwaithalos(nbr_rank, send_req, recv_req);
     //Finally, calculate the cells that will be affected by halos
-    result = calculateimg(pnew, pold, edge, 1, 1, 1, range[1], &sum_cell);
+//    result = calculateimg(pnew, pold, edge, 1, 1, 1, range[1], &sum_cell);
     if (result > delta_max )  delta_max = result;   
-    result = calculateimg(pnew, pold, edge, range[0], 1, range[0], range[1], &sum_cell);
+//    result = calculateimg(pnew, pold, edge, range[0], 1, range[0], range[1], &sum_cell);
     if (result > delta_max )  delta_max = result;   
-    result = calculateimg(pnew, pold, edge, 2, 1, range[0]-1, 1, &sum_cell);
+//    result = calculateimg(pnew, pold, edge, 2, 1, range[0]-1, 1, &sum_cell);
     if (result > delta_max )  delta_max = result;   
-    result = calculateimg(pnew, pold, edge, 2, range[1], range[0]-1, range[1], &sum_cell);
+//    result = calculateimg(pnew, pold, edge, 2, range[1], range[0]-1, range[1], &sum_cell);
     if (result > delta_max )  delta_max = result;   
     //Swap the pold and pnew pointer 
     double **pswap = pnew;
