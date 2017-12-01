@@ -111,12 +111,19 @@ void Iwaithalos(int*nbr_rank, MPI_Request *send_req, MPI_Request *recv_req) {
   }
 }
 
-void calculateimg(double **new_img, double **old_img, double **edge, int starti, int startj, int endi, int endj) {
+double calculateimg(double **new_img, double **old_img, double **edge, int starti,   \
+                  int startj, int endi, int endj, double *sumnew, double *sumold) {
+  double delta_max = 0;
   for (int i=starti ; i <= endi; i++ )  {
     for (int j=startj ; j <= endj; j++)  {
       new_img[i][j]=0.25*(old_img[i-1][j]+old_img[i+1][j]+old_img[i][j-1]+old_img[i][j+1]-edge[i-1][j-1]);
+      *sumnew = *sumnew + new_img[i][j];
+      *sumold = *sumold + old_img[i][j];
+      double delta = fabs(new_img[i][j]-old_img[i][j]);
+      if (delta > delta_max)    delta_max = delta;
     }
-  } 
+  }
+  return delta_max; 
 }
 
 int main (int argc, char **argv) {
@@ -277,28 +284,44 @@ int main (int argc, char **argv) {
   // The calculation and the halo switch begins
   iter = 0 ;
   double delta_max = 1;
+  double global_max = 0;
+  double global_sum = 0;
   pold = odd;
   pnew = even;
   MPI_Request send_req[4], recv_req[4];
+  
+  double result;
+  double sum_cell;
 
-
-  while (iter < 2) {
+  while (iter < 100) {
+    delta_max = 0;
+    sum_cell = 0;
     // First, swap the halos using the old map
     Iswaphalos(pold, nbr_rank, range, DT_ROWHALO, DT_COLHALO, &cart_comm, send_req, recv_req);
     // Second, calculate the centre cells which will not be affected by halos
-    calculateimg(pnew, pold, edge, 2, 2, range[0]-1, range[1]-1);
+    result = calculateimg(pnew, pold, edge, 2, 2, range[0]-1, range[1]-1, *sum_cell); 
+    if (result > delta_max )  delta_max = result;
     //Third, wait for all the asyn tasks finished.
     Iwaithalos(nbr_rank, send_req, recv_req);
     //Finally, calculate the cells that will be affected by halos
-    calculateimg(pnew, pold, edge, 1, 1, 1, range[1]);
-    calculateimg(pnew, pold, edge, range[0], 1, range[0], range[1]);
-    calculateimg(pnew, pold, edge, 2, 1, range[0]-1, 1);
-    calculateimg(pnew, pold, edge, 2, range[1], range[0]-1, range[1]);
+    result = calculateimg(pnew, pold, edge, 1, 1, 1, range[1], *sum_cell);
+    if (result > delta_max )  delta_max = result;   
+    result = calculateimg(pnew, pold, edge, range[0], 1, range[0], range[1], *sum_cell);
+    if (result > delta_max )  delta_max = result;   
+    result = calculateimg(pnew, pold, edge, 2, 1, range[0]-1, 1, *sum_cell);
+    if (result > delta_max )  delta_max = result;   
+    result = calculateimg(pnew, pold, edge, 2, range[1], range[0]-1, range[1], *sum_cell);
+    if (result > delta_max )  delta_max = result;   
     //Swap the pold and pnew pointer 
     double **pswap = pnew;
     pold = pnew;
     pnew = pswap;
     iter ++;
+
+    MPI_Reduce(&delta_max, &global_max, 1, MPI_DOUBLE, MPI_MAX, 0, cart_comm);
+    MPI_Reduce(&sum_cell, &global_sum, 1, MPI_DOUBLE, MPI_SUM, 0, cart_comm);
+    printf("CART_RANK:%d  ITER:%d MAX:%f G-MAX:%f SUM:%f G-SUM:%f",cart_rank,iter,delta_max,global_max,sum_cell,global_sum);
+
   }  
 
   // After the calculation , the No.0 node gather the data together and save to file.
