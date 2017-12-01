@@ -6,11 +6,10 @@ CFLAGS= -O3
 LFLAGS=	-lm
 
 EXE=	imagempi \
-        imagenew
+        
 
 SRC= \
 	imagempi.c \
-	imagenew.c \
 	arralloc.c \
 	pgmio.c
 
