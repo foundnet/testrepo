@@ -283,7 +283,7 @@ int main (int argc, char **argv) {
   // The calculation and the halo switch begins
   iter = 0 ;
   double delta_max = 1;
-  double global_max = 0;
+  double global_max = 1;
   double global_sum = 0;
   pold = odd;
   pnew = even;
@@ -292,7 +292,7 @@ int main (int argc, char **argv) {
   double result;
   double sum_cell;
 
-  while (iter < 100) {
+  while (global_max >= 0.1 ) {
     delta_max = 0;
     sum_cell = 0;
     // First, swap the halos using the old map
@@ -313,12 +313,14 @@ int main (int argc, char **argv) {
     if (result > delta_max )  delta_max = result;   
     //Swap the pold and pnew pointer 
     double **pswap = pnew;
-    pold = pnew;
-    pnew = pswap;
+    pnew = pold;
+    pold = pswap;
     iter ++;
 
     MPI_Reduce(&delta_max, &global_max, 1, MPI_DOUBLE, MPI_MAX, 0, cart_comm);
     MPI_Reduce(&sum_cell, &global_sum, 1, MPI_DOUBLE, MPI_SUM, 0, cart_comm);
+    MPI_Bcast (&global_max, 1, MPI_DOUBLE, 0, cart_comm) ;
+
     printf("CART_RANK:%d  ITER:%d MAX:%f G-MAX:%f SUM:%f G-SUM:%f\n",cart_rank,iter,delta_max,global_max,sum_cell,global_sum);
 
   }  
