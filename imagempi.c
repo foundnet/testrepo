@@ -305,7 +305,7 @@ int main (int argc, char **argv) {
      for (j=1 ; j < range[1]+1 ; j++)
        edge[i-1][j-1] = pold[i][j] ;
 */
-  memset(&masterbuf[0][0], 0, sizeof(double)*img_size[0]*img_size[1]); 
+//  memset(&masterbuf[0][0], 0, sizeof(double)*img_size[0]*img_size[1]); 
   gather_vector(sendbuf, edge, block_size, cart_rank, size, DT_BLOCK, &cart_comm);
   
   if (cart_rank == 0)  {
