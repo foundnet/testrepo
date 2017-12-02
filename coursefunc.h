@@ -61,5 +61,4 @@ void Iwaithalos(int*nbr_rank, MPI_Request *send_req, MPI_Request *recv_req);
  * @param starti endi start endj    the coordinate of the start and end point.
  * @preturn the max differece
 **/
-double calculateimg(double **new_img, double **old_img, double **edge, int starti,   \
-                  int startj, int endi, int endj, double *sumnew);
+double calculateimg(double **new_img, double **old_img, double **edge, int starti, int startj, int endi, int endj, double *sumnew);
