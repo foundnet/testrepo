@@ -4,7 +4,6 @@
 #include <mpi.h>
 #include <float.h>
 #include <string.h>
-//#include <unistd.h>
 
 #include "arralloc.h"
 #include "pgmio.h"
@@ -200,7 +199,6 @@ while (global_max >= 0.1 ) {
     // Second, calculate the centre cells which will not be affected by halos
     result = calculateimg(pnew, pold, edge, 2, 2, range[0]-1, range[1]-1, &sum_cell); 
     if (result > delta_max )  delta_max = result;
-    sleep(1);
     //Third, wait for all the asyn tasks finished.
     Iwaithalos(nbr_rank, send_req, recv_req);
     //Finally, calculate the cells that will be affected by halos
@@ -217,7 +215,7 @@ while (global_max >= 0.1 ) {
     pnew = pold;
     pold = pswap;
     iter ++;
-
+    //Data reduced and broadcasted
     MPI_Reduce(&delta_max, &global_max, 1, MPI_DOUBLE, MPI_MAX, 0, cart_comm);
     MPI_Reduce(&sum_cell, &global_sum, 1, MPI_DOUBLE, MPI_SUM, 0, cart_comm);
     MPI_Bcast (&global_max, 1, MPI_DOUBLE, 0, cart_comm) ;
