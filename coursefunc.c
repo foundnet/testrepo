@@ -80,23 +80,23 @@ void Iswaphalos(double **cur_image, int*nbr_rank, int *range, MPI_Datatype rhalo
         MPI_Irecv(&cur_image[range[0]+1][1],1,rhalo,nbr_rank[r],10,*pcomm,&recv_req[r]);
         break;
       case TOP:
-        //MPI_Issend(&cur_image[1][range[1]],1,chalo,nbr_rank[r],10,*pcomm,&send_req[r]);
-        //MPI_Irecv(&cur_image[1][range[1]+1],1,chalo,nbr_rank[r],10,*pcomm,&recv_req[r]);
+        MPI_Issend(&cur_image[1][range[1]],1,chalo,nbr_rank[r],10,*pcomm,&send_req[r]);
+        MPI_Irecv(&cur_image[1][range[1]+1],1,chalo,nbr_rank[r],10,*pcomm,&recv_req[r]);
         break;
       case BOTTOM:
-        //MPI_Issend(&cur_image[1][1],1,chalo,nbr_rank[r],10,*pcomm,&send_req[r]);
-        //MPI_Irecv(&cur_image[1][0],1,chalo,nbr_rank[r],10,*pcomm,&recv_req[r]);
+        MPI_Issend(&cur_image[1][1],1,chalo,nbr_rank[r],10,*pcomm,&send_req[r]);
+        MPI_Irecv(&cur_image[1][0],1,chalo,nbr_rank[r],10,*pcomm,&recv_req[r]);
         break;
     }
   }
 }
 
-void Iwaithalos(int*nbr_rank, MPI_Request send_req[], MPI_Request recv_req[]) {
+void Iwaithalos(int*nbr_rank, MPI_Request *send_req, MPI_Request *recv_req) {
   MPI_Status status;
   for (int r=0 ; r < 4 ; r++)  {
     if (nbr_rank[r] == MPI_PROC_NULL)  continue;
     MPI_Wait(&send_req[r], &status);
-    MPI_Wait(&send_req[r], &status);
+    MPI_Wait(&recv_req[r], &status);
   }
 }
 
