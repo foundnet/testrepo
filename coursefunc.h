@@ -4,10 +4,8 @@
 #include <mpi.h>
 #include <float.h>
 #include <string.h>
-//#include <unistd.h>
 
 #include "arralloc.h"
-#include "pgmio.h"
 
 typedef enum _nbr {LEFT,RIGHT,TOP,BOTTOM} nbr;
 

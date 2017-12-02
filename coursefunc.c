@@ -1,4 +1,4 @@
-#include “coursefunc.h”
+#include "coursefunc.h"
 
 // The No.0 node scatter edge data to every node. The other nodes receive edge data.
 double ** scatter_vector(double **sendbuf, int *block_size, int N_modi,int cur_rank, int comm_size, MPI_Datatype DATATYPE, MPI_Comm *pcomm) {
