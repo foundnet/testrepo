@@ -51,7 +51,7 @@ int main (int argc, char **argv) {
   MPI_Comm_rank(cart_comm, &cart_rank);
 
 
-  printf("CART_RANK:%d  O_RANK:%d DIM[0]%d DIM[1]%d Left:%d Right:%d Top:%d Bottom:%d\n", \
+//  printf("CART_RANK:%d  O_RANK:%d DIM[0]%d DIM[1]%d Left:%d Right:%d Top:%d Bottom:%d\n", \
          cart_rank,rank,dims[0],dims[1],nbr_rank[LEFT],nbr_rank[RIGHT],nbr_rank[TOP],nbr_rank[BOTTOM]);
 
 /********************************************************************************
@@ -65,7 +65,7 @@ int main (int argc, char **argv) {
       filename = argv[1];
     } 
     else {
-      printf("Usage: ./imagecalc <edge file name>\n");
+      printf("Usage: ./imagempi <edge file name>\n");
       return 0;
     }
     pgmsize(filename,&img_size[0], &img_size[1]);
@@ -99,7 +99,7 @@ int main (int argc, char **argv) {
   MPI_Bcast(&block_size, 2, MPI_INT, 0, cart_comm) ;
   MPI_Bcast(&img_size, 2, MPI_INT, 0, cart_comm) ;
   MPI_Bcast(&img_modisize, 2, MPI_INT, 0, cart_comm) ;
-  printf("CART_RANK:%d  After Bcast BLOCK:%d %d MN:%d %d MODI:%d %d\n",cart_rank,block_size[0],block_size[1],img_size[0],img_size[1],img_modisize[0],img_modisize[1]);
+//  printf("CART_RANK:%d  After Bcast BLOCK:%d %d MN:%d %d MODI:%d %d\n",cart_rank,block_size[0],block_size[1],img_size[0],img_size[1],img_modisize[0],img_modisize[1]);
  
   // Create new derived datatype to transfer data
   MPI_Datatype DT_BLOCK;
@@ -126,7 +126,7 @@ int main (int argc, char **argv) {
       break ;
     }
   }
-  printf("CART_RANK:%d  RANGE BLOCK:R-SIZE[0] %d R-SIZE[1] %d \n",cart_rank,range[0],range[1]);
+//  printf("CART_RANK:%d  RANGE BLOCK:R-SIZE[0] %d R-SIZE[1] %d \n",cart_rank,range[0],range[1]);
 
   double **pnew, **pold;
   double **odd  = (double **) arralloc(sizeof(double), 2, block_size[0]+2, block_size[1]+2);
@@ -152,7 +152,7 @@ int main (int argc, char **argv) {
       odd[i][0] = (int)(255.0*val);
       even[i][0] = (int)(255.0*val);
     }
-    printf("CART_RANK:%d  SETFIXB BOT [FROM%d TO %d][0] M-%d\n",cart_rank,1+cur_coods[0]*block_size[0],range[0]+cur_coods[0]*block_size[0],img_size[0]);
+ //   printf("CART_RANK:%d  SETFIXB BOT [FROM%d TO %d][0] M-%d\n",cart_rank,1+cur_coods[0]*block_size[0],range[0]+cur_coods[0]*block_size[0],img_size[0]);
   }
   if (nbr_rank[TOP] == MPI_PROC_NULL )  {
     for ( i=1 ; i < range[0]+1 ; i++)  {
@@ -162,7 +162,7 @@ int main (int argc, char **argv) {
       odd[i][range[1]+1] = (int)(255.0*(1.0-val));
       even[i][range[1]+1] = (int)(255.0*(1.0-val));
     }
-    printf("CART_RANK:%d  SETFIXB TOP [FROM%d TO %d][%d] M-%d\n",cart_rank,1+cur_coods[0]*block_size[0],range[0]+cur_coods[0]*block_size[0],range[1]+1,img_size[0]);
+ //   printf("CART_RANK:%d  SETFIXB TOP [FROM%d TO %d][%d] M-%d\n",cart_rank,1+cur_coods[0]*block_size[0],range[0]+cur_coods[0]*block_size[0],range[1]+1,img_size[0]);
   }
 
 /********************************************************************************
@@ -191,7 +191,8 @@ int main (int argc, char **argv) {
   double result;
   double sum_cell;
 
-while (global_max >= 0.1 ) {
+//while (global_max >= 0.1 ) {
+while (iter < 100 ) {
     delta_max = 0;
     sum_cell = 0;
     // First, swap the halos using the old map
@@ -220,7 +221,7 @@ while (global_max >= 0.1 ) {
     MPI_Reduce(&sum_cell, &global_sum, 1, MPI_DOUBLE, MPI_SUM, 0, cart_comm);
     MPI_Bcast (&global_max, 1, MPI_DOUBLE, 0, cart_comm) ;
 
-    printf("CART_RANK:%d  ITER:%d MAX:%f G-MAX:%f SUM:%f G-SUM:%f\n",cart_rank,iter,delta_max,global_max,sum_cell,global_sum);
+//    printf("CART_RANK:%d  ITER:%d MAX:%f G-MAX:%f SUM:%f G-SUM:%f\n",cart_rank,iter,delta_max,global_max,sum_cell,global_sum);
 
   }  
 

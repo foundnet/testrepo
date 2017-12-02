@@ -41,7 +41,7 @@ int gather_vector(double **recvbuf,double **localimg,int *block_size,int cur_ran
  * @param range          the actual size of local image
  * @param rhalo chalo    the customized datatype for swaping halo
  * @param send_req recv_req     send and recv request
- * @param DATATYPE      the customized datatype  * @return double **    new received new edge data vector
+ * @return void
 **/
 void Iswaphalos(double **cur_image, int*nbr_rank, int *range, MPI_Datatype rhalo,  \
                MPI_Datatype chalo, MPI_Comm *pcomm, MPI_Request *send_req, MPI_Request *recv_req);
