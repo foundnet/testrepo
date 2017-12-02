@@ -192,7 +192,7 @@ int main (int argc, char **argv) {
   double sum_cell;
 
 //while (global_max >= 0.1 ) {
-while (iter < 100 ) {
+while (iter < 1500 ) {
     delta_max = 0;
     sum_cell = 0;
     // First, swap the halos using the old map
