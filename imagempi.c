@@ -4,127 +4,14 @@
 #include <mpi.h>
 #include <float.h>
 #include <string.h>
-#include <unistd.h>
+//#include <unistd.h>
 
 #include "arralloc.h"
 #include "pgmio.h"
-
+#include "coursefunc.h"
 
 double boundaryval(int i, int m);
-typedef enum _nbr {LEFT,RIGHT,TOP,BOTTOM} nbr;
 
-// The No.0 node scatter edge data to every node. The other nodes receive edge data.
-double ** scatter_vector(double **sendbuf, int *block_size, int N_modi,int cur_rank, int comm_size, MPI_Datatype DATATYPE, MPI_Comm *pcomm) {
-  double **edge = (double **) arralloc(sizeof(double), 2, block_size[0], N_modi);
-  MPI_Request *request = (MPI_Request *)malloc( comm_size*sizeof(MPI_Request) );
-  MPI_Status status;
-
-  if (cur_rank == 0)  {
-    int cur_coods[2] = {0,0};
-    // The No.0 node send data to the other nodes.
-    for (int i=1; i < comm_size; i++) {
-      MPI_Cart_coords(*pcomm, i, 2, cur_coods) ;
-      MPI_Issend(&sendbuf[cur_coods[0]*block_size[0]][cur_coods[1]*block_size[1]],1,DATATYPE,i,5,*pcomm,&request[i]);
-      printf("CART_RANK:0  SCATTER SEND-%d POS-I-%d J-%d \n",i,cur_coods[0]*block_size[0],cur_coods[1]*block_size[1]);
-    }
-    // The No.0 node copy data to its own edge data vector.
-    for (int i=0; i<block_size[0]; i++)
-      for (int j=0; j<block_size[1]; j++)
-        edge[i][j] = sendbuf[i][j];
-    // The No.0 node wait for all the responses.
-    for (int i=1 ; i < comm_size ; i++) {
-      MPI_Wait(&request[i], &status);
-    }
-    printf("CART_RANK:0 SCATTER SEND ALL DONE\n");
-  }
-  else {
-    // The other nodes receive data and put them in edge vector.
-    MPI_Recv(&edge[0][0], 1, DATATYPE, 0, 5, *pcomm, &status);
-    printf("CART_RANK:%d  SCATTER RECVED\n",cur_rank);
-  }
-
-  free(request);
-  return edge;
-}
-
-int gather_vector(double **recvbuf,double **localimg,int *block_size,int cur_rank,int comm_size,MPI_Datatype DATATYPE,MPI_Comm *pcomm) {
-  MPI_Request *request = (MPI_Request *)malloc( comm_size*sizeof(MPI_Request) );
-  MPI_Status status;
-  if (cur_rank == 0)  {
-    int rcv_coods[2] = {0,0};
-    // The No.0 node recv data from the other nodes and save it in a temporary buffer.
-    for (int i=1; i < comm_size; i++) {
-      MPI_Cart_coords(*pcomm, i, 2, rcv_coods) ;
-      MPI_Irecv(&recvbuf[rcv_coods[0]*block_size[0]][rcv_coods[1]*block_size[1]],1,DATATYPE,i,6,*pcomm,&request[i]);
-      printf("CART_RANK:0  GATHER RECV-%d POS-I-%d J-%d \n",i,rcv_coods[0]*block_size[0],rcv_coods[1]*block_size[1]);
-    }
-    // The No.0 node copy local edge data to the complete data vector.
-    for (int i=0; i<block_size[0]; i++)
-      for (int j=0; j<block_size[1]; j++)
-        recvbuf[i][j] = localimg[i][j] ;
-    // The No.0 node wait for all the receives finished.
-    for (int i=1 ; i < comm_size ; i++) {
-      MPI_Wait(&request[i], &status);
-    }
-    printf("CART_RANK:0 GATHER RECV ALL DONE\n");
- }
-  else {
-    // The other nodes send their local image data to No.0 node.
-    MPI_Ssend(&localimg[0][0], 1, DATATYPE, 0, 6, *pcomm);
-    printf("CART_RANK:%d  GATHER SEND\n",cur_rank);
-  }
-
-  free(request);
-  return 1;
-}
-
-
-void Iswaphalos(double **cur_image, int*nbr_rank, int *range, MPI_Datatype rhalo,  \
-               MPI_Datatype chalo, MPI_Comm *pcomm, MPI_Request *send_req, MPI_Request *recv_req) {
-  for (int r=0 ; r < 4 ; r++)  {
-    if (nbr_rank[r] == MPI_PROC_NULL)  continue;
-    switch (r) {
-      case LEFT:
-        MPI_Issend(&cur_image[1][1],1,rhalo,nbr_rank[r],10,*pcomm,&send_req[r]);
-        MPI_Irecv (&cur_image[0][1],1,rhalo,nbr_rank[r],10,*pcomm,&recv_req[r]);
-        break;
-      case RIGHT:
-        MPI_Issend(&cur_image[range[0]][1],1,rhalo,nbr_rank[r],10,*pcomm,&send_req[r]);
-        MPI_Irecv(&cur_image[range[0]+1][1],1,rhalo,nbr_rank[r],10,*pcomm,&recv_req[r]);
-        break;
-      case TOP:
-        MPI_Issend(&cur_image[1][range[1]],1,chalo,nbr_rank[r],10,*pcomm,&send_req[r]);
-        MPI_Irecv(&cur_image[1][range[1]+1],1,chalo,nbr_rank[r],10,*pcomm,&recv_req[r]);
-        break;
-      case BOTTOM:
-        MPI_Issend(&cur_image[1][1],1,chalo,nbr_rank[r],10,*pcomm,&send_req[r]);
-        MPI_Irecv(&cur_image[1][0],1,chalo,nbr_rank[r],10,*pcomm,&recv_req[r]);
-    }
-  }
-}
-
-void Iwaithalos(int*nbr_rank, MPI_Request send_req[], MPI_Request recv_req[]) {
-  MPI_Status status;
-  for (int r=0 ; r < 4 ; r++)  {
-    if (nbr_rank[r] == MPI_PROC_NULL)  continue;
-    MPI_Wait(&send_req[r], &status);
-    MPI_Wait(&send_req[r], &status);
-  }
-}
-
-double calculateimg(double **new_img, double **old_img, double **edge, int starti,   \
-                  int startj, int endi, int endj, double *sumnew) {
-  double delta_max = 0;
-  for (int i=starti ; i <= endi; i++ )  {
-    for (int j=startj ; j <= endj; j++)  {
-      new_img[i][j]=0.25*(old_img[i-1][j]+old_img[i+1][j]+old_img[i][j-1]+old_img[i][j+1]-edge[i-1][j-1]);
-      *sumnew = *sumnew + new_img[i][j];
-      double delta = fabs(new_img[i][j]-old_img[i][j]);
-      if (delta > delta_max)    delta_max = delta;
-    }
-  }
-  return delta_max; 
-}
 
 int main (int argc, char **argv) {
   double **edge, **masterbuf, **sendbuf, **buf;
@@ -147,11 +34,10 @@ int main (int argc, char **argv) {
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-/**
+/********************************************************************************
 *   STEP 1 : Virtual Topology Opetations
 *            Create and manipulate the topology for communication
-**/
-
+********************************************************************************/
   //Create the virtual Cartesian Topology
   MPI_Comm cart_comm;
   int dims[2] = {0,0};                  //This is a 2D decomposing.
@@ -169,10 +55,10 @@ int main (int argc, char **argv) {
   printf("CART_RANK:%d  O_RANK:%d DIM[0]%d DIM[1]%d Left:%d Right:%d Top:%d Bottom:%d\n", \
          cart_rank,rank,dims[0],dims[1],nbr_rank[LEFT],nbr_rank[RIGHT],nbr_rank[TOP],nbr_rank[BOTTOM]);
 
-/**
-*   STEP 2 : 
-*            
-**/
+/********************************************************************************
+*   STEP 2 : Edge file reading 
+*            The No.0 rank open and read the edge file .
+********************************************************************************/
   //The No.0 node read the edge data and calculate the subvector's size.
   //Then it broadcast the size data and scatter the edge data to the other nodes.
   if(cart_rank == 0)  {
@@ -186,6 +72,7 @@ int main (int argc, char **argv) {
     pgmsize(filename,&img_size[0], &img_size[1]);
     block_size[0] = img_size[0]%dims[0] == 0? img_size[0]/dims[0]:img_size[0]/dims[0]+1;
     block_size[1] = img_size[1]%dims[1] == 0? img_size[1]/dims[1]:img_size[1]/dims[1]+1;
+
     //Enlarge the data vector's size to make it can be divided exactly by the dims
     //So, we can use derived datatype to distribute and gather data
     img_modisize[0] = block_size[0] * dims[0];
@@ -203,9 +90,13 @@ int main (int argc, char **argv) {
             else sendbuf[i][j] = DBL_MAX;
         }
     }
-
   }
 
+
+/********************************************************************************
+*   STEP 3 : Data distribution and scatterd
+*            broadcast the size data and scatter the edge data .
+********************************************************************************/
   MPI_Bcast(&block_size, 2, MPI_INT, 0, cart_comm) ;
   MPI_Bcast(&img_size, 2, MPI_INT, 0, cart_comm) ;
   MPI_Bcast(&img_modisize, 2, MPI_INT, 0, cart_comm) ;
@@ -218,7 +109,11 @@ int main (int argc, char **argv) {
   
   edge = (double**)scatter_vector(sendbuf, block_size, img_modisize[1], cart_rank, size, DT_BLOCK, &cart_comm);
 
-  // Set the working range by iterate the edge vector.
+ /********************************************************************************
+*   STEP 4 : Init data vectors
+*            init the image vector, set the fixed boundary value.
+********************************************************************************/
+ // Set the working range by iterate the edge vector.
   int range[2] = {block_size[0] , block_size[1]};
   for (i=0 ; i < block_size[0] ; i++)  {
     if (edge[i][0] == DBL_MAX) {
@@ -271,6 +166,10 @@ int main (int argc, char **argv) {
     printf("CART_RANK:%d  SETFIXB TOP [FROM%d TO %d][%d] M-%d\n",cart_rank,1+cur_coods[0]*block_size[0],range[0]+cur_coods[0]*block_size[0],range[1]+1,img_size[0]);
   }
 
+/********************************************************************************
+*   STEP 5 : Iterate and swap the halos
+*            Do the iteration and calculation, swap halos in each loop.
+********************************************************************************/
   // Create the derived data type to switch the halo row. 
   MPI_Datatype DT_ROWHALO;
   MPI_Type_vector(1, block_size[1], block_size[1], MPI_DOUBLE, &DT_ROWHALO);
@@ -293,7 +192,7 @@ int main (int argc, char **argv) {
   double result;
   double sum_cell;
 
-while (iter < 20 ) {
+while (global_max >= 0.1 ) {
     delta_max = 0;
     sum_cell = 0;
     // First, swap the halos using the old map
@@ -327,7 +226,12 @@ while (iter < 20 ) {
 
   }  
 
-  // After the calculation , the No.0 node gather the data together and save to file.
+ /********************************************************************************
+*   STEP 1 : Virtual Topology Opetations
+*            Create and manipulate the topology for communication
+********************************************************************************/
+
+ // After the calculation , the No.0 node gather the data together and save to file.
   for (i=1 ; i < range[0]+1 ;i++)
      for (j=1 ; j < range[1]+1 ; j++)
        edge[i-1][j-1] = pold[i][j] ;
