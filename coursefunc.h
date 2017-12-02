@@ -49,7 +49,6 @@ void Iswaphalos(double **cur_image, int*nbr_rank, int *range, MPI_Datatype rhalo
  * @brief Wait the async tasks 
  * @param nbr_rank       the neighbour's ranks 
  * @param send_req recv_req     send and recv request
- * @param DATATYPE      the customized datatype  * 
  * @return void
 **/
 void Iwaithalos(int*nbr_rank, MPI_Request *send_req, MPI_Request *recv_req);
