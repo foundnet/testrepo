@@ -86,6 +86,7 @@ void Iswaphalos(double **cur_image, int*nbr_rank, int *range, MPI_Datatype rhalo
       case BOTTOM:
         //MPI_Issend(&cur_image[1][1],1,chalo,nbr_rank[r],10,*pcomm,&send_req[r]);
         //MPI_Irecv(&cur_image[1][0],1,chalo,nbr_rank[r],10,*pcomm,&recv_req[r]);
+        break;
     }
   }
 }
