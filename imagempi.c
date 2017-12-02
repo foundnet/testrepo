@@ -196,12 +196,12 @@ while (iter < 100 ) {
     delta_max = 0;
     sum_cell = 0;
     // First, swap the halos using the old map
-    Iswaphalos(pold, nbr_rank, range, DT_ROWHALO, DT_COLHALO, &cart_comm, send_req, recv_req);
+//    Iswaphalos(pold, nbr_rank, range, DT_ROWHALO, DT_COLHALO, &cart_comm, send_req, recv_req);
     // Second, calculate the centre cells which will not be affected by halos
     result = calculateimg(pnew, pold, edge, 2, 2, range[0]-1, range[1]-1, &sum_cell); 
     if (result > delta_max )  delta_max = result;
     //Third, wait for all the asyn tasks finished.
-    Iwaithalos(nbr_rank, send_req, recv_req);
+//    Iwaithalos(nbr_rank, send_req, recv_req);
     //Finally, calculate the cells that will be affected by halos
     result = calculateimg(pnew, pold, edge, 1, 1, 1, range[1], &sum_cell);
     if (result > delta_max )  delta_max = result;   
