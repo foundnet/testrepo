@@ -9,6 +9,8 @@
 #include "pgmio.h"
 #include "coursefunc.h"
 
+#define INTERVAL 100
+
 double boundaryval(int i, int m);
 
 
@@ -24,7 +26,7 @@ int main (int argc, char **argv) {
   int img_modisize[2] = {0,0};
   int block_size[2] = {0,0};
   int nbr_rank[4] = {-1,-1,-1,-1};
-
+  double start_t = MPI_Wtime();
   char *filename;
   int rank, size;
 
@@ -191,8 +193,9 @@ int main (int argc, char **argv) {
   double result;
   double sum_cell;
 
-//while (global_max >= 0.1 ) {
-while (iter < 1500 ) {
+
+
+while (global_max >= 0.1 ) {
     delta_max = 0;
     sum_cell = 0;
     // First, swap the halos using the old map
@@ -220,14 +223,16 @@ while (iter < 1500 ) {
     MPI_Reduce(&delta_max, &global_max, 1, MPI_DOUBLE, MPI_MAX, 0, cart_comm);
     MPI_Reduce(&sum_cell, &global_sum, 1, MPI_DOUBLE, MPI_SUM, 0, cart_comm);
     MPI_Bcast (&global_max, 1, MPI_DOUBLE, 0, cart_comm) ;
-
-//    printf("CART_RANK:%d  ITER:%d MAX:%f G-MAX:%f SUM:%f G-SUM:%f\n",cart_rank,iter,delta_max,global_max,sum_cell,global_sum);
-
+    if (iter % INTERVAL == 0)  {
+      double divs = sum_cell / (img_size[0]*img_size[1]);
+      printf("CART_RANK:%d  ITER:%d  AVG NUM:&f \n",iter,divs);
+    }
   }  
+  printf("CART_RANK:%d  ITER:%d MAX:%f G-MAX:%f SUM:%f G-SUM:%f\n",cart_rank,iter,delta_max,global_max,sum_cell,global_sum);
 
  /********************************************************************************
-*   STEP 1 : Virtual Topology Opetations
-*            Create and manipulate the topology for communication
+*   STEP 6 : Gather all the data then produce the file
+*            
 ********************************************************************************/
 
  // After the calculation , the No.0 node gather the data together and save to file.
@@ -243,12 +248,13 @@ while (iter < 1500 ) {
       for (i=0 ; i < img_size[0] ; i++)
         for (j=0 ; j < img_size[1] ; j++)
           masterbuf[i][j] = sendbuf[i][j];
-    
+    double end_t = MPI_Wtime();
     pgmwrite("parallelimg.pgm", &masterbuf[0][0], img_size[0], img_size[1]);
+    printf("***********************************************\n");
+    printf("Time is:%f\n",end_t - start_t);
   }
-
-  printf("I didn't deadlock, yeah!\n");
-
+  free(masterbuf);
+  free(edge);
   MPI_Finalize();
 }
 
